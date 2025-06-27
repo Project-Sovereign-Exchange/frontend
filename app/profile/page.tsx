@@ -9,7 +9,7 @@ import {Button} from "@/components/ui/button";
 
 export default function ProfilePage() {
     return (
-            <div className="flex flex-col p-8 w-screen min-h-screen">
+            <div className="flex flex-col p-8 w-full min-h-screen">
                 <div className="flex flex-row items-center pt-50 pb-20 space-x-20 justify-center">
 
                     <div className="flex flex-col items-center space-y-2">

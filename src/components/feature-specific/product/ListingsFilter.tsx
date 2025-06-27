@@ -1,169 +1,149 @@
 "use client"
-
 import * as React from "react"
-import {Slider} from "@/components/ui/slider";
-import {
-    DropdownMenu, DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import {Button} from "@/components/ui/button";
-import {DropdownMenuCheckboxItemProps} from "@radix-ui/react-dropdown-menu";
+import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion";
+import {Checkbox} from "@/components/ui/checkbox";
+import {Label} from "@/components/ui/label";
+import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
+import {Rating} from "@/components/common/Rating";
+import {ChevronRight, Plus} from "lucide-react";
 
-type Checked = DropdownMenuCheckboxItemProps["checked"]
 
 
 export function ListingsFilter() {
-    const [showStatusBar, setShowStatusBar] = React.useState<Checked>(true)
-    const [showActivityBar, setShowActivityBar] = React.useState<Checked>(false)
-    const [showPanel, setShowPanel] = React.useState<Checked>(false)
-
     return (
-        <div className="flex flex-col items-center w-full h-full mb-4 space-y-4">
+        <div className="flex flex-col items-center w-full h-full my-8 space-y-4">
             <div>
                 <h1 className="text-2xl font-bold mb-4">Filters</h1>
             </div>
-            <div className="flex flex-col items-start w-full max-w-sm space-y-8">
-            <div className="">
-                <h1 className="text-muted-foreground">Language</h1>
-                <DropdownMenu>
-                    <DropdownMenuTrigger className="w-full">
-                        <Button className="w-full px-4 py-2 text-left border rounded-md shadow-sm">
-                            Languages
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full">
-                        <DropdownMenuLabel>Select Language(s)</DropdownMenuLabel>
-                        <DropdownMenuSeparator/>
-                        <DropdownMenuCheckboxItem
-                            checked={showStatusBar}
-                            onCheckedChange={setShowStatusBar}
-                        >
-                            Status Bar
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={showActivityBar}
-                            onCheckedChange={setShowActivityBar}
-                            disabled
-                        >
-                            Activity Bar
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={showPanel}
-                            onCheckedChange={setShowPanel}
-                        >
-                            Panel
-                        </DropdownMenuCheckboxItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            <div>
-                <h1 className="text-muted-foreground">Condition</h1>
-                <DropdownMenu>
-                    <DropdownMenuTrigger className="w-full">
-                        <Button className="w-full px-4 py-2 text-left border rounded-md shadow-sm">
-                            Languages
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full">
-                        <DropdownMenuLabel>Select Language(s)</DropdownMenuLabel>
-                        <DropdownMenuSeparator/>
-                        <DropdownMenuCheckboxItem
-                            checked={showStatusBar}
-                            onCheckedChange={setShowStatusBar}
-                        >
-                            Status Bar
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={showActivityBar}
-                            onCheckedChange={setShowActivityBar}
-                            disabled
-                        >
-                            Activity Bar
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={showPanel}
-                            onCheckedChange={setShowPanel}
-                        >
-                            Panel
-                        </DropdownMenuCheckboxItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            <div>
-                <h1 className="text-muted-foreground">Price</h1>
-                <p> Value </p>
-                <Slider className="w-full"></Slider>
-            </div>
-            <div>
-                <h1 className="text-muted-foreground">Seller Rating</h1>
-                <DropdownMenu>
-                    <DropdownMenuTrigger className="w-full">
-                        <Button className="w-full px-4 py-2 text-left border rounded-md shadow-sm">
-                            Languages
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full">
-                        <DropdownMenuLabel>Select Language(s)</DropdownMenuLabel>
-                        <DropdownMenuSeparator/>
-                        <DropdownMenuCheckboxItem
-                            checked={showStatusBar}
-                            onCheckedChange={setShowStatusBar}
-                        >
-                            Status Bar
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={showActivityBar}
-                            onCheckedChange={setShowActivityBar}
-                            disabled
-                        >
-                            Activity Bar
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={showPanel}
-                            onCheckedChange={setShowPanel}
-                        >
-                            Panel
-                        </DropdownMenuCheckboxItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            <div>
-                <h1 className="text-muted-foreground">Delivery time</h1>
-                <DropdownMenu>
-                    <DropdownMenuTrigger className="w-full">
-                        <Button className="w-full px-4 py-2 text-left border rounded-md shadow-sm">
-                            Languages
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full">
-                        <DropdownMenuLabel>Select Language(s)</DropdownMenuLabel>
-                        <DropdownMenuSeparator/>
-                        <DropdownMenuCheckboxItem
-                            checked={showStatusBar}
-                            onCheckedChange={setShowStatusBar}
-                        >
-                            Status Bar
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={showActivityBar}
-                            onCheckedChange={setShowActivityBar}
-                            disabled
-                        >
-                            Activity Bar
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                            checked={showPanel}
-                            onCheckedChange={setShowPanel}
-                        >
-                            Panel
-                        </DropdownMenuCheckboxItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            </div>
+            <Accordion
+                type="multiple"
+                className="w-full"
+            >
+                <AccordionItem value="item-1">
+                    <AccordionTrigger>Language(s)</AccordionTrigger>
+                    <AccordionContent className="flex flex-col gap-4 text-balance">
+                        <div className="flex items-center gap-3">
+                            <Checkbox id="terms" />
+                            <Label htmlFor="terms">English</Label>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-2">
+                    <AccordionTrigger>Condition</AccordionTrigger>
+                    <AccordionContent className="flex flex-col gap-4 text-balance">
+                        <div className="flex items-center gap-3">
+                            <Checkbox id="terms" />
+                            <Label htmlFor="terms">Mint</Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Checkbox id="terms" />
+                            <Label htmlFor="terms">Near Mint</Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Checkbox id="terms" />
+                            <Label htmlFor="terms">Lightly Played</Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Checkbox id="terms" />
+                            <Label htmlFor="terms">Moderately Played</Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Checkbox id="terms" />
+                            <Label htmlFor="terms">Heavily Played</Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Checkbox id="terms" />
+                            <Label htmlFor="terms">Damaged</Label>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-3">
+                    <AccordionTrigger>Shipping time</AccordionTrigger>
+                    <AccordionContent className="flex flex-col gap-4 text-balance">
+                        <p className="text-muted-foreground">In day(s)</p>
+                        <RadioGroup defaultValue="1">
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="1" id="r1" />
+                                <Label htmlFor="r1">1</Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="2" id="r2" />
+                                <Label htmlFor="r2">2</Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="3" id="r3" />
+                                <Label htmlFor="r3">3</Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="4" id="r4" />
+                                <Label htmlFor="r3">4</Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="5" id="r5" />
+                                <Label htmlFor="r3">5+</Label>
+                            </div>
+                        </RadioGroup>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-4">
+                    <AccordionTrigger>Seller Rating</AccordionTrigger>
+                    <AccordionContent className="flex flex-col gap-4 text-balance">
+                        <p className="text-muted-foreground">And above</p>
+                        <RadioGroup defaultValue="1">
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="1" id="r1" />
+                                <Label htmlFor="r1">
+                                    <Rating
+                                        size={20}
+                                        value={1}
+                                        readOnly={true}
+                                    />
+                                </Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="2" id="r2" />
+                                <Label htmlFor="r1">
+                                    <Rating
+                                        size={20}
+                                        value={2}
+                                        readOnly={true}
+                                    />
+                                </Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="3" id="r3" />
+                                <Label htmlFor="r1">
+                                    <Rating
+                                        size={20}
+                                        value={3}
+                                        readOnly={true}
+                                    />
+                                </Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="4" id="r3" />
+                                <Label htmlFor="r1">
+                                    <Rating
+                                        size={20}
+                                        value={4}
+                                        readOnly={true}
+                                    />
+                                </Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <RadioGroupItem value="5" id="r3" />
+                                <Label htmlFor="r1">
+                                    <Rating
+                                        size={20}
+                                        value={5}
+                                        readOnly={true}
+                                    />
+                                </Label>
+                            </div>
+                        </RadioGroup>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
         </div>
     )
 }

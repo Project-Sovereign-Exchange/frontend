@@ -10,7 +10,7 @@ export const Navbar = () => {
     return (
         <section>
             <div>
-                <nav className="fixed w-full px-8 py-4 h-32">
+                <nav className="fixed left-1/2 -translate-x-1/2 w-full max-w-7xl px-8 py-4 h-32 z-50">
                     {/* Navbar Container */}
                     <div className="z-10 h-full w-full flex justify-between items-center bg-primary-foreground rounded-lg px-8 shadow-lg outline-1 outline-border">
                         <div className="">

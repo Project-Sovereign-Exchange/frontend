@@ -15,7 +15,7 @@ export default function Home() {
                 />
             </div>
 
-            <div className="w-full flex-1 bg-card flex flex-col justify-center items-center">
+            <div className="w-full flex-1 flex flex-col justify-center items-center">
             <div className="flex flex-row w-full justify-center items-center space-x-4 mb-24 mt-8">
                 <PinContainer
                     className="w-[250px] h-[350px]"

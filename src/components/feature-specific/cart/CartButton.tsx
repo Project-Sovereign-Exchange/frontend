@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/sheet"
 import {Button} from "@/components/ui/button";
 import {ShoppingCart} from "lucide-react";
+import {Separator} from "@/components/ui/separator";
+import {CartListItem} from "@/components/feature-specific/cart/CartListItem";
 
 export const CartButton= () => {
     return (
@@ -17,14 +19,24 @@ export const CartButton= () => {
                 <ShoppingCart/>
             </Button>
         </SheetTrigger>
-        <SheetContent>
+        <SheetContent className="px-4 py-4 min-w-xl">
             <SheetHeader>
-                <SheetTitle>Are you absolutely sure?</SheetTitle>
-                <SheetDescription>
-                    This action cannot be undone. This will permanently delete your account
-                    and remove your data from our servers.
-                </SheetDescription>
+                <div className="flex items-center justify-between p-4">
+                <SheetTitle className="text-xl">
+                    Shopping Cart
+                </SheetTitle>
+                <SheetTitle className="text-xl">
+                    2 Items
+                </SheetTitle>
+                </div>
             </SheetHeader>
+
+            <Separator/>
+            <CartListItem/>
+            <Separator/>
+            <Button className="w-full mt-4">
+                Checkout
+            </Button>
         </SheetContent>
     </Sheet>
     )

@@ -31,13 +31,17 @@ export default function RootLayout({
       >
       <ThemeProvider
         attribute="class"
-        defaultTheme="light"
+        defaultTheme="dark"
         enableSystem
         disableTransitionOnChange
         >
           <div className="flex flex-col max-h-screen">
-              <Navbar />
-              <main className="">{children}</main>
+              <Navbar/>
+              <main>
+                  <div className="max-w-7xl w-full mx-auto px-4">
+                      {children}
+                  </div>
+              </main>
           </div>
       </ThemeProvider>
       </body>
