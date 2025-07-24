@@ -6,7 +6,7 @@ import {Badge} from "@/components/ui/badge";
 
 export const Listing = () => {
   return (
-      <div className="w-full flex flex-row justify-between items-center px-8 py-4">
+      <div className="w-full flex flex-row justify-between items-center px-8 py-4 hover:bg-accent rounded-lg">
         <div className="flex flex-col">
             <h1 className="font-semibold">
                 Product Listing
@@ -29,7 +29,7 @@ export const Listing = () => {
               Condition
           </Badge>
 
-          <div className="flex flex-row space-x-4">
+          <div className="flex flex-row space-x-4 bg-primary-foreground rounded-lg">
               <ListingIncrementor/>
           </div>
       </div>

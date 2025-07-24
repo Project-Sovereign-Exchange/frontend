@@ -1,6 +1,6 @@
 import {Searchbar} from "@/components/common/Searchbar";
 import {CartButton} from "@/components/feature-specific/cart/CartButton";
-import {SignInButton} from "@/components/feature-specific/sign-in/SignInButton";
+import {AuthButtons} from "@/components/feature-specific/sign-in/AuthButtons";
 import Link from "next/link";
 import {NavbarCategories} from "@/components/common/NavbarCategories";
 import Image from "next/image";
@@ -25,8 +25,7 @@ export const Navbar = () => {
                         </div>
                         <div className="flex items-center space-x-4">
                             {/* Sign in and cart */}
-                            <SignInButton/>
-                            <CartButton/>
+                            <AuthButtons/>
                         </div>
                     </div>
 

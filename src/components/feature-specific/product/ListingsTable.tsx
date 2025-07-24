@@ -43,8 +43,10 @@ export function ListingsTable() {
                 </h1>
             </div>
 
-            <Listing/>
-            <Listing/>
+            <div className="flex flex-col items-start justify-between w-full px-4 mt-4">
+                <Listing/>
+                <Listing/>
+            </div>
         </div>
     )
 }

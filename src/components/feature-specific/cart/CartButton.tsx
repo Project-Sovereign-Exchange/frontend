@@ -15,7 +15,7 @@ export const CartButton= () => {
     return (
     <Sheet>
         <SheetTrigger asChild>
-            <Button className="font-bold bg-primary-foreground text-accent-foreground hover:text-primary-foreground">
+            <Button variant="ghost">
                 <ShoppingCart/>
             </Button>
         </SheetTrigger>
