@@ -65,13 +65,13 @@ export function LoginInForm({
                             router.push(action.cardId ? `/cards/${action.cardId}/sell` : '/cards/sell');
                             break;
                         default:
-                            router.push('/dashboard');
+                            router.push('/');
                     }
                 } catch {
-                    router.push('/dashboard');
+                    router.push('/');
                 }
             } else {
-                router.push('/dashboard');
+                router.push('/');
             }
         } catch (error) {
             console.error('Login error:', error);

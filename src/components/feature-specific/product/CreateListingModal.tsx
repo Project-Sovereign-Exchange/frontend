@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Search, Check } from "lucide-react"
+import {Checkbox} from "@/components/ui/checkbox";
 
 // Types
 interface Product {
@@ -35,15 +36,17 @@ interface Product {
 }
 
 // Mock data - replace with your actual product search API
+// Categories: card, accessory, sealed
 const MOCK_PRODUCTS: Product[] = [
-    { id: "1", name: "Pokemon Card Booster Pack", category: "trading-cards" },
-    { id: "2", name: "Magic: The Gathering Commander Deck", category: "trading-cards" },
-    { id: "3", name: "iPhone 15 Pro", category: "electronics" },
-    { id: "4", name: "MacBook Pro M3", category: "electronics" },
-    { id: "5", name: "Nike Air Jordan 1", category: "sneakers" },
-    { id: "6", name: "Adidas Yeezy 350", category: "sneakers" },
-    { id: "7", name: "The Great Gatsby - First Edition", category: "books" },
-    { id: "8", name: "Harry Potter Complete Set", category: "books" },
+    { id: "1", name: "Darth Vader", category: "card" },
+    { id: "2", name: "Obi Wan", category: "card" },
+    { id: "3", name: "Yoda", category: "card" },
+    { id: "4", name: "Playmat", category: "accessory" },
+    { id: "5", name: "Card Sleeves", category: "accessory" },
+    { id: "6", name: "Deck Pod", category: "accessory" },
+    { id: "7", name: "LOF Display Box", category: "sealed" },
+    { id: "8", name: "SHD Display Box", category: "sealed" },
+    { id: "9", name: "Pokemon Collectors Box", category: "sealed" },
 ]
 
 export function CreateListingModal() {
@@ -203,20 +206,18 @@ interface CategoryFormProps {
 
 function CategoryForm({ category, productName }: CategoryFormProps) {
     switch (category) {
-        case 'trading-cards':
-            return <TradingCardForm productName={productName} />
-        case 'electronics':
-            return <ElectronicsForm productName={productName} />
-        case 'sneakers':
-            return <SneakersForm productName={productName} />
-        case 'books':
-            return <BooksForm productName={productName} />
+        case 'card':
+            return <CardForm productName={productName} />
+        case 'accessory':
+            return <AccessoryForm productName={productName} />
+        case 'sealed':
+            return <SealedForm productName={productName} />
         default:
             return <GenericForm productName={productName} />
     }
 }
 
-function TradingCardForm({ productName }: { productName: string }) {
+function CardForm({ productName }: { productName: string }) {
     return (
         <>
             <div className="grid gap-3">
@@ -247,7 +248,7 @@ function TradingCardForm({ productName }: { productName: string }) {
     )
 }
 
-function ElectronicsForm({ productName }: { productName: string }) {
+function AccessoryForm({ productName }: { productName: string }) {
     return (
         <>
             <div className="grid gap-3">
@@ -255,19 +256,12 @@ function ElectronicsForm({ productName }: { productName: string }) {
                 <select id="condition" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                     <option value="">Select condition</option>
                     <option value="new">New</option>
-                    <option value="like-new">Like New</option>
-                    <option value="excellent">Excellent</option>
-                    <option value="good">Good</option>
-                    <option value="fair">Fair</option>
+                    <option value="used">Used</option>
                 </select>
             </div>
             <div className="grid gap-3">
-                <Label htmlFor="storage">Storage/Memory</Label>
-                <Input id="storage" placeholder="e.g., 256GB, 16GB RAM" />
-            </div>
-            <div className="grid gap-3">
-                <Label htmlFor="accessories">Included Accessories</Label>
-                <Input id="accessories" placeholder="e.g., Charger, Box, etc." />
+                <Label htmlFor="accessories">Description</Label>
+                <Input id="accessories" placeholder="e.g., In box, from 2025" />
             </div>
             <div className="grid gap-3">
                 <Label htmlFor="price">Price ($)</Label>
@@ -277,62 +271,19 @@ function ElectronicsForm({ productName }: { productName: string }) {
     )
 }
 
-function SneakersForm({ productName }: { productName: string }) {
+function SealedForm({ productName }: { productName: string }) {
     return (
         <>
             <div className="grid gap-3">
-                <Label htmlFor="size">Size</Label>
-                <Input id="size" placeholder="e.g., 10.5, 42 EU" />
+                <Label htmlFor="condition">Sealed</Label>
+                <Checkbox/>
+                <span className="text-sm text-muted-foreground">
+                    By checking this box, you confirm that the product is sealed and has not been opened.
+                </span>
             </div>
             <div className="grid gap-3">
-                <Label htmlFor="condition">Condition</Label>
-                <select id="condition" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="">Select condition</option>
-                    <option value="deadstock">Deadstock</option>
-                    <option value="new">New</option>
-                    <option value="excellent">Excellent</option>
-                    <option value="good">Good</option>
-                    <option value="worn">Worn</option>
-                </select>
-            </div>
-            <div className="grid gap-3">
-                <Label htmlFor="box">Original Box</Label>
-                <select id="box" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="">Select option</option>
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                    <option value="replacement">Replacement Box</option>
-                </select>
-            </div>
-            <div className="grid gap-3">
-                <Label htmlFor="price">Price ($)</Label>
-                <Input id="price" type="number" step="0.01" placeholder="0.00" />
-            </div>
-        </>
-    )
-}
-
-function BooksForm({ productName }: { productName: string }) {
-    return (
-        <>
-            <div className="grid gap-3">
-                <Label htmlFor="condition">Condition</Label>
-                <select id="condition" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="">Select condition</option>
-                    <option value="new">New</option>
-                    <option value="like-new">Like New</option>
-                    <option value="very-good">Very Good</option>
-                    <option value="good">Good</option>
-                    <option value="acceptable">Acceptable</option>
-                </select>
-            </div>
-            <div className="grid gap-3">
-                <Label htmlFor="edition">Edition</Label>
-                <Input id="edition" placeholder="e.g., First Edition, Hardcover" />
-            </div>
-            <div className="grid gap-3">
-                <Label htmlFor="isbn">ISBN (Optional)</Label>
-                <Input id="isbn" placeholder="e.g., 978-0-123456-78-9" />
+                <Label htmlFor="accessories">Description</Label>
+                <Input id="accessories" placeholder="e.g., " />
             </div>
             <div className="grid gap-3">
                 <Label htmlFor="price">Price ($)</Label>
@@ -345,17 +296,6 @@ function BooksForm({ productName }: { productName: string }) {
 function GenericForm({ productName }: { productName: string }) {
     return (
         <>
-            <div className="grid gap-3">
-                <Label htmlFor="condition">Condition</Label>
-                <select id="condition" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="">Select condition</option>
-                    <option value="new">New</option>
-                    <option value="excellent">Excellent</option>
-                    <option value="good">Good</option>
-                    <option value="fair">Fair</option>
-                    <option value="poor">Poor</option>
-                </select>
-            </div>
             <div className="grid gap-3">
                 <Label htmlFor="description">Description</Label>
                 <Input id="description" placeholder="Describe the item..." />

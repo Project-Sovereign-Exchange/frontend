@@ -24,7 +24,7 @@ interface LoginCredentials {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:3008/api/v1';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3008/api/v1';
 
 // Custom event for auth state changes
 const AUTH_EVENTS = {
@@ -159,7 +159,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = async () => {
         try {
-            // Note: Your logout endpoint should be consistent - either /api/auth/logout or /private/auth/logout
             await fetch(`${BACKEND_URL}/private/auth/logout`, {
                 method: 'POST',
                 credentials: 'include',

@@ -22,9 +22,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
                                        children,
+                                        params,
                                    }: Readonly<{
     children: React.ReactNode;
+    params: { segment?: string[];  };
 }>) {
+    const isAdminRoute = params.segment?.[0] === "admin";
+    console.log("isAdminRoute:", params.segment?.[0]);
+
     return (
         <html lang="en" suppressHydrationWarning>
         <body
@@ -38,7 +43,7 @@ export default function RootLayout({
                 disableTransitionOnChange
             >
                 <div className="flex flex-col max-h-screen">
-                    <Navbar/>
+                    {!isAdminRoute && <Navbar />}
                     <main>
                         <div className="max-w-7xl w-full mx-auto px-4">
                             {children}
