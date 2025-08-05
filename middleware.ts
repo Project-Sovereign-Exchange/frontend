@@ -38,29 +38,13 @@ export default function middleware(request: NextRequest) {
             }
             return NextResponse.next();
         }
-        case '/admin/login': {
-            if (authToken) {
-                return NextResponse.redirect(new URL('/admin', request.url));
-            }
-            return NextResponse.next();
-        }
     }
 
     if (!authToken) {
-        /*
-        if (pathname.startsWith('/admin')) {
-            const loginUrl = new URL('/admin/login', request.url);
-            loginUrl.searchParams.set('redirect', pathname);
-            return NextResponse.redirect(loginUrl);
-        } else {
             const loginUrl = new URL('/auth/login', request.url);
             loginUrl.searchParams.set('redirect', pathname);
             return NextResponse.redirect(loginUrl);
-        }
-         */
-        const loginUrl = new URL('/auth/login', request.url);
-        loginUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(loginUrl);
+
     }
 
     // Validate the auth token
@@ -74,7 +58,7 @@ export default function middleware(request: NextRequest) {
             return response;
         }
 
-        if (payload.purpose !== 'access') {
+        if (payload.purpose !== 'access' && payload.purpose !== 'admin') {
             return NextResponse.redirect(new URL('/auth/login', request.url));
         }
     } catch (error) {
@@ -87,6 +71,6 @@ export default function middleware(request: NextRequest) {
 }
 
 export const config = {
-    //matcher: ['/auth/:path*', '/admin/:path*'],
-    matcher: ['/auth/:path*'],
+    matcher: ['/auth/:path*', '/admin/:path*'],
+    //matcher: ['/auth/:path*'],
 };

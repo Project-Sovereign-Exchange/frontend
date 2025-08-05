@@ -2,7 +2,6 @@
 
 import {useAuth} from '@/lib/auth/AuthContext';
 import Link from 'next/link';
-import {useState} from 'react';
 import {LucideUser} from "lucide-react";
 import {CartButton} from "@/components/feature-specific/cart/CartButton";
 import {Button} from "@/components/ui/button";
@@ -16,7 +15,7 @@ import {
 import {CreateListingModal} from "@/components/feature-specific/product/CreateListingModal";
 
 export const AuthButtons = () => {
-    const {isAuthenticated, isLoading, logout, user} = useAuth();
+    const {isAdmin, isLoading, logout, user} = useAuth();
 
     if (isLoading) {
         return (
@@ -27,7 +26,7 @@ export const AuthButtons = () => {
         );
     }
 
-    if (isAuthenticated) {
+    if (!isAdmin && user) {
         return (
             <div className="flex items-center space-x-3">
                 {/* Sell Button */}
@@ -64,6 +63,16 @@ export const AuthButtons = () => {
                 <CartButton/>
             </div>
         );
+    } else if (isAdmin && user) {
+        return (
+            <div>
+                <Button>
+                    <Link href="/admin/">
+                        Admin Dashboard
+                    </Link>
+                </Button>
+            </div>
+        )
     }
 
     // Not authenticated - show sign in options

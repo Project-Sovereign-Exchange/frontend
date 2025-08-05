@@ -1,17 +1,38 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
+import {authApi} from "@/lib/api/endpoints/auth";
 
-interface User {
+export interface User {
     id: string;
     email: string;
     username: string;
+    roles: string[];
+    permissions: string[];
+}
+
+interface AuthState {
+    user: User | null;
+    tokenPurpose: 'access' | 'temporary' | 'admin' | null;
+    issuedAt: number | null; // For token freshness checks
 }
 
 interface AuthContextType {
     user: User | null;
+    roles: string[];
+    permissions: string[];
+    tokenPurpose: 'access' | 'temporary' | 'admin' | null;
     isLoading: boolean;
     isAuthenticated: boolean;
+    // Role/permission helpers
+    hasRole: (role: string) => boolean;
+    hasPermission: (permission: string) => boolean;
+    hasAnyRole: (roles: string[]) => boolean;
+    hasAnyPermission: (permissions: string[]) => boolean;
+    isAdmin: boolean;
+    isModerator: boolean;
+    canAccessAdmin: boolean;
+    // Auth methods
     login: (credentials: LoginCredentials) => Promise<void>;
     logout: () => Promise<void>;
     refreshAuth: () => Promise<void>;
@@ -24,8 +45,6 @@ interface LoginCredentials {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3008/api/v1';
-
 // Custom event for auth state changes
 const AUTH_EVENTS = {
     LOGOUT: 'auth:logout',
@@ -34,12 +53,42 @@ const AUTH_EVENTS = {
 } as const;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [authState, setAuthState] = useState<AuthState>({
+        user: null,
+        tokenPurpose: null,
+        issuedAt: null,
+    });
     const [isLoading, setIsLoading] = useState(true);
     const lastAuthCheckRef = useRef<number>(0);
     const authCheckInProgressRef = useRef<boolean>(false);
 
+    const { user, tokenPurpose } = authState;
     const isAuthenticated = !!user;
+    const roles = user?.roles || [];
+    const permissions = user?.permissions || [];
+
+    // Role and permission helper functions
+    const hasRole = useCallback((role: string): boolean => {
+        return roles.includes(role);
+    }, [roles]);
+
+    const hasPermission = useCallback((permission: string): boolean => {
+        // Admins have all permissions
+        return permissions.includes(permission) || roles.includes('admin');
+    }, [permissions, roles]);
+
+    const hasAnyRole = useCallback((rolesToCheck: string[]): boolean => {
+        return rolesToCheck.some(role => roles.includes(role));
+    }, [roles]);
+
+    const hasAnyPermission = useCallback((permissionsToCheck: string[]): boolean => {
+        return permissionsToCheck.some(permission => hasPermission(permission));
+    }, [hasPermission]);
+
+    // Computed properties for common checks
+    const isAdmin = hasRole('admin');
+    const isModerator = hasRole('moderator');
+    const canAccessAdmin = isAdmin && tokenPurpose === 'admin';
 
     // Debounced auth check - only check if it's been more than 30 seconds
     const checkAuthStatus = useCallback(async (force: boolean = false) => {
@@ -55,26 +104,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authCheckInProgressRef.current = true;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/private/auth/me`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
+            // Assuming your API returns user data with roles and token info
+            const response = await authApi.me();
+
+            setAuthState({
+                user: {
+                    id: response.user.id,
+                    email: response.user.email,
+                    username: response.user.username,
+                    roles: response.user.roles || [],
+                    permissions: response.user.permissions || [],
                 },
+                tokenPurpose: response.tokenPurpose,
+                issuedAt: response.issuedAt || Date.now(),
             });
 
-            if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
-                lastAuthCheckRef.current = now;
-            } else if (response.status === 401) {
-                setUser(null);
+            lastAuthCheckRef.current = now;
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+            if (errorMessage.includes('401')) {
+                setAuthState({ user: null, tokenPurpose: null, issuedAt: null });
                 window.dispatchEvent(new CustomEvent(AUTH_EVENTS.TOKEN_EXPIRED));
             } else {
-                setUser(null);
+                setAuthState({ user: null, tokenPurpose: null, issuedAt: null });
+                console.error('Auth check failed:', error);
             }
-        } catch (error) {
-            console.error('Auth check failed:', error);
         } finally {
             setIsLoading(false);
             authCheckInProgressRef.current = false;
@@ -107,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Listen for custom auth events from other tabs
         const handleAuthEvent = (event: CustomEvent) => {
             if (event.type === AUTH_EVENTS.LOGOUT || event.type === AUTH_EVENTS.TOKEN_EXPIRED) {
-                setUser(null);
+                setAuthState({ user: null, tokenPurpose: null, issuedAt: null });
             }
         };
 
@@ -125,32 +180,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             window.removeEventListener(AUTH_EVENTS.TOKEN_EXPIRED, handleAuthEvent as EventListener);
             window.removeEventListener('focus', debouncedActivityCheck);
         };
-    }, [checkAuthStatus, debouncedActivityCheck]); // Only depend on the stable functions
+    }, [checkAuthStatus, debouncedActivityCheck]);
 
     const login = async (credentials: LoginCredentials) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${BACKEND_URL}/public/auth/login`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
+            await authApi.login(credentials);
+
+            const response = await authApi.me();
+
+            setAuthState({
+                user: {
+                    id: response.user.id,
+                    email: response.user.email,
+                    username: response.user.username,
+                    roles: response.user.roles || [],
+                    permissions: response.user.permissions || [],
                 },
-                body: JSON.stringify(credentials),
+                tokenPurpose: response.tokenPurpose,
+                issuedAt: response.issuedAt || Date.now(),
             });
 
-            if (!response.ok) {
-                throw new Error('Login failed');
-            }
-
-            const userData = await response.json();
-            setUser(userData);
             lastAuthCheckRef.current = Date.now();
 
             // Notify other tabs about login
             window.dispatchEvent(new CustomEvent(AUTH_EVENTS.LOGIN));
         } catch (error) {
-            setUser(null);
+            setAuthState({ user: null, tokenPurpose: null, issuedAt: null });
             throw error;
         } finally {
             setIsLoading(false);
@@ -159,14 +215,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = async () => {
         try {
-            await fetch(`${BACKEND_URL}/private/auth/logout`, {
-                method: 'POST',
-                credentials: 'include',
-            });
+            await authApi.logout();
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            setUser(null);
+            setAuthState({ user: null, tokenPurpose: null, issuedAt: null });
             lastAuthCheckRef.current = 0;
 
             // Notify other tabs about logout
@@ -182,8 +235,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         <AuthContext.Provider
             value={{
                 user,
+                roles,
+                permissions,
+                tokenPurpose,
                 isLoading,
                 isAuthenticated,
+                // Helper functions
+                hasRole,
+                hasPermission,
+                hasAnyRole,
+                hasAnyPermission,
+                // Computed properties
+                isAdmin,
+                isModerator,
+                canAccessAdmin,
+                // Auth methods
                 login,
                 logout,
                 refreshAuth,
@@ -200,4 +266,16 @@ export function useAuth() {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
+}
+
+// Additional hook for role-based component rendering
+export function useRequireRole(requiredRole: string) {
+    const { hasRole, isLoading } = useAuth();
+    return { hasAccess: hasRole(requiredRole), isLoading };
+}
+
+// Additional hook for permission-based component rendering
+export function useRequirePermission(requiredPermission: string) {
+    const { hasPermission, isLoading } = useAuth();
+    return { hasAccess: hasPermission(requiredPermission), isLoading };
 }

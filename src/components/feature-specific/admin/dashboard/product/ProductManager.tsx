@@ -4,9 +4,17 @@ import {CreateProductModal} from "@/components/feature-specific/admin/dashboard/
 import {Input} from "@/components/ui/input";
 import {Search} from "lucide-react";
 import {ProductManagerList} from "@/components/feature-specific/admin/dashboard/product/ProductManagerList";
-import {Product} from "@/types/product";
+import {
+    buildCustomMetadata,
+    extractImageVariantsFromFormData,
+    extractMetadataFromFormData,
+    Product,
+    ProductCategory
+} from "@/types/product";
 import {useState, useEffect, useCallback} from "react";
 import {Button} from "@/components/ui/button";
+import {apiClient} from "@/lib/api/client";
+import {CreateProductRequest, productsApi} from "@/lib/api/endpoints/products";
 
 interface ProductResponse {
     products: Product[];
@@ -98,7 +106,31 @@ export const ProductManager = () => {
         console.log('Edit product:', product);
     }, []);
 
-    const handleProductCreated = useCallback(() => {
+    const handleProductCreated = useCallback(async (formData: FormData) => {
+        try {
+            const metadataFields = extractMetadataFromFormData(formData);
+
+            const imageVariants = extractImageVariantsFromFormData(formData);
+
+            const productData: CreateProductRequest = {
+                name: formData.get('name') as string,
+                game: formData.get('game') as string,
+                expansion: formData.get('expansion') as string | undefined,
+                set_number: formData.get('set_number') as string | undefined,
+                category: formData.get('category') as ProductCategory,
+                subcategory: formData.get('subcategory') as string | undefined,
+                metadata: buildCustomMetadata(metadataFields)
+            };
+
+            const result = await productsApi.createProductWithImages(productData, imageVariants);
+
+            console.log('Complete product created:', result);
+
+        } catch (error) {
+            console.error('Failed to create product:', error);
+            alert(`Failed to create product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+
         loadProducts(currentOffset, searchTerm);
     }, [currentOffset, searchTerm, loadProducts]);
 
