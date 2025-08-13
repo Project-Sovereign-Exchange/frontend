@@ -2,6 +2,8 @@ import {Product} from "@/types/product";
 import {Button} from "@/components/ui/button";
 import {useState} from "react";
 import {Pen} from "lucide-react";
+import Image from "next/image";
+import {buildProductImageUrlWithSize} from "@/util/images";
 
 export const ProductManagerList = (props: {
     products: Product[];
@@ -18,6 +20,7 @@ export const ProductManagerList = (props: {
                     onMouseEnter={() => setHoveredProduct(product.id)}
                     onMouseLeave={() => setHoveredProduct(null)}
                 >
+                    <div className="flex flex-row space-x-4">
                     <div className="flex flex-col">
                         <h2 className="text-lg font-semibold">{product.name}</h2>
                         <p className="text-sm text-gray-600">{product.game}</p>
@@ -25,6 +28,21 @@ export const ProductManagerList = (props: {
                             <p className="text-xs text-gray-500">{product.expansion}</p>
                         )}
                     </div>
+                    <Image
+                        src={buildProductImageUrlWithSize(
+                            product.game,
+                            product.id,
+                            'Default',
+                            'front',
+                            'thumbnail'
+                        ) || '/images/product/default.png'}
+                        alt={product.name}
+                        width={50}
+                        height={50}
+                        className="rounded-md"
+                    />
+                    </div>
+
                     <div className="flex space-x-2">
                         {hoveredProduct === product.id && (
                             <Button

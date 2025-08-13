@@ -6,10 +6,8 @@ import {Search} from "lucide-react";
 import {ProductManagerList} from "@/components/feature-specific/admin/dashboard/product/ProductManagerList";
 import {
     buildCustomMetadata,
-    extractImageVariantsFromFormData,
-    extractMetadataFromFormData,
+    extractMetadataFromFormData, extractVariantOrderFromFormData, extractVariantsFromFormData,
     Product,
-    ProductCategory
 } from "@/types/product";
 import {useState, useEffect, useCallback} from "react";
 import {Button} from "@/components/ui/button";
@@ -108,23 +106,124 @@ export const ProductManager = () => {
 
     const handleProductCreated = useCallback(async (formData: FormData) => {
         try {
-            const metadataFields = extractMetadataFromFormData(formData);
-
-            const imageVariants = extractImageVariantsFromFormData(formData);
-
+            // Extract basic product data
             const productData: CreateProductRequest = {
                 name: formData.get('name') as string,
+                description: formData.get('description') as string || undefined,
+                category: formData.get('category') as string,
+                subcategory: formData.get('subcategory') as string || undefined,
                 game: formData.get('game') as string,
-                expansion: formData.get('expansion') as string | undefined,
-                set_number: formData.get('set_number') as string | undefined,
-                category: formData.get('category') as ProductCategory,
-                subcategory: formData.get('subcategory') as string | undefined,
-                metadata: buildCustomMetadata(metadataFields)
+                set: formData.get('expansion') as string || undefined,
+                base_image_url: undefined,
+                variants: extractVariantsFromFormData(formData),
+                metadata: buildCustomMetadata(extractMetadataFromFormData(formData))
             };
 
-            const result = await productsApi.createProductWithImages(productData, imageVariants);
+            // Step 1: Create the product with variants
+            const response = await productsApi.createProduct(productData);
+            console.log('Product created:', response);
 
-            console.log('Complete product created:', result);
+            // Extract the actual variant IDs from the response
+            if (!response.data?.variants || response.data.variants.length === 0) {
+                console.log('No variants returned from product creation');
+                return;
+            }
+
+            const createdProduct = response.data.product;
+            const createdVariants = response.data.variants;
+
+            // Step 2: Upload images using the real variant IDs
+            const imageFormData = new FormData();
+            let hasImages = false;
+
+            // Create mapping from frontend variant order to backend variant IDs
+            const frontendVariants = extractVariantOrderFromFormData(formData);
+            const variantIdMapping = new Map<string, number>();
+
+            // Map frontend variants to backend variants by order
+            createdVariants.forEach((backendVariant: any, index: number) => {
+                if (frontendVariants[index]) {
+                    variantIdMapping.set(frontendVariants[index].frontendId, backendVariant.id);
+                    console.log(`Mapping frontend variant ${frontendVariants[index].frontendId} to backend variant ${backendVariant.id}`);
+                }
+            });
+
+            // Extract image data from form
+            const variantEntries = Array.from(formData.entries())
+                .filter(([key]) => key.startsWith('variant_'));
+
+            const variantImageMap = new Map<string, any>();
+
+            // Group variant data by frontend variant ID
+            variantEntries.forEach(([key, value]) => {
+                const parts = key.split('_');
+                if (parts.length >= 3) {
+                    const frontendVariantId = parts[1];
+                    const fieldType = parts.slice(2).join('_');
+
+                    if (!variantImageMap.has(frontendVariantId)) {
+                        variantImageMap.set(frontendVariantId, {});
+                    }
+
+                    variantImageMap.get(frontendVariantId)[fieldType] = value;
+                }
+            });
+
+            // Process each variant's images using real backend IDs
+            variantImageMap.forEach((variantData, frontendVariantId) => {
+                const backendVariantId = variantIdMapping.get(frontendVariantId);
+
+                if (backendVariantId === undefined) {
+                    console.warn(`No backend variant ID found for frontend ID: ${frontendVariantId}`);
+                    return;
+                }
+
+                const variantName = variantData.name || `Variant ${backendVariantId}`;
+                const isPrimary = variantData.primary === 'true';
+
+                console.log(`Processing variant ${frontendVariantId} -> ${backendVariantId}:`, {
+                    name: variantName,
+                    isPrimary,
+                    hasFront: !!(variantData.front instanceof File),
+                    hasBack: !!(variantData.back instanceof File)
+                });
+
+                // Add variant metadata using real backend ID
+                imageFormData.append(`variant_${backendVariantId}_name`, variantName);
+                imageFormData.append(`variant_${backendVariantId}_primary`, isPrimary.toString());
+
+                // Add front image if exists
+                if (variantData.front && variantData.front instanceof File) {
+                    imageFormData.append(`variant_${backendVariantId}_front`, variantData.front);
+                    hasImages = true;
+                    console.log(`Added front image for variant ${backendVariantId}`);
+                }
+
+                // Add back image if exists
+                if (variantData.back && variantData.back instanceof File) {
+                    imageFormData.append(`variant_${backendVariantId}_back`, variantData.back);
+                    hasImages = true;
+                    console.log(`Added back image for variant ${backendVariantId}`);
+                }
+            });
+
+            // Upload images if any exist
+            if (hasImages && createdProduct?.id) {
+                console.log(`Uploading images for product ${createdProduct.id}...`);
+
+                // Debug: Log all FormData entries
+                console.log('FormData entries for image upload:');
+                for (const [key, value] of imageFormData.entries()) {
+                    console.log(`${key}:`, value instanceof File ? `File(${value.name})` : value);
+                }
+
+                const imageResult = await productsApi.uploadProductImages(createdProduct.id, imageFormData);
+                console.log('Images uploaded:', imageResult);
+            } else {
+                console.log('No images to upload');
+            }
+
+            console.log('Complete product created with images');
 
         } catch (error) {
             console.error('Failed to create product:', error);

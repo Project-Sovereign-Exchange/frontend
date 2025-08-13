@@ -1,19 +1,30 @@
-import {API_BASE_URL, apiClient} from "@/lib/api/client";
-import {Product} from "@/types/product";
+import {API_BASE_URL, apiClient, ApiResponse} from "@/lib/api/client";
+import {CreateProductResponse, Product} from "@/types/product";
+import {Variant} from "@/types/variant";
+
+export interface CreateVariantRequest {
+    name: string;
+    set_number?: string;
+    is_primary: boolean;
+    metadata?: any;
+}
 
 export interface CreateProductRequest {
     name: string;
-    game: string;
+    description?: string;
     category: string;
-    expansion?: string;
-    set_number?: string;
     subcategory?: string;
-    metadata?: Record<string, unknown>;
+    game: string;
+    set?: string;
+    base_image_url?: string;
+    variants: CreateVariantRequest[];
+    metadata?: any;
 }
 
-export interface Variant {
+export interface ImageVariant {
     id: string;
     name: string;
+    set_number?: string;
     frontImage?: File | string;
     backImage?: File | string;
     isPrimary: boolean;
@@ -25,34 +36,25 @@ export interface ProductResponse {
     product: Product;
 }
 
+export interface ImageUploadResponse {
+    success: boolean;
+    message: string;
+}
+
+export interface ProductsListResponse {
+    products: Product[];
+    offset: number;
+    limit: number;
+    total: number;
+    more: boolean;
+}
+
 export const productsApi = {
-    createProduct: async (data: CreateProductRequest): Promise<ProductResponse> => apiClient.post('/private/product', data),
+    createProduct: async (data: CreateProductRequest): Promise<ApiResponse<CreateProductResponse>> => {
+        return apiClient.post('/private/product', data);
+    },
 
-    uploadProductImages: async (productId: string, variants: Variant[]): Promise<ProductResponse> => {
-        const formData = new FormData();
-
-        variants.forEach((variant) => {
-            formData.append(`variant_${variant.id}_name`, variant.name);
-
-            formData.append(`variant_${variant.id}_primary`, variant.isPrimary ? 'true' : 'false');
-
-            if (variant.frontImage) {
-                if (variant.frontImage instanceof File) {
-                    formData.append(`variant_${variant.id}_front`, variant.frontImage);
-                } else {
-                    formData.append(`variant_${variant.id}_front_url`, variant.frontImage);
-                }
-            }
-
-            if (variant.backImage) {
-                if (variant.backImage instanceof File) {
-                    formData.append(`variant_${variant.id}_back`, variant.backImage);
-                } else {
-                    formData.append(`variant_${variant.id}_back_url`, variant.backImage);
-                }
-            }
-        });
-
+    uploadProductImages: async (productId: string, formData: FormData): Promise<ImageUploadResponse> => {
         const response = await fetch(`${API_BASE_URL}/private/product/${productId}/images`, {
             method: 'POST',
             credentials: 'include',
@@ -60,44 +62,34 @@ export const productsApi = {
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to upload images: ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(`Failed to upload images: ${response.statusText} - ${errorText}`);
         }
 
         return response.json();
     },
 
-    createProductWithImages: async (data: CreateProductRequest, imageVariants: Variant[]): Promise<ProductResponse> => {
-        try {
-            const productData = {
-                name: data.name,
-                game: data.game,
-                category: data.category,
-                expansion: data.expansion,
-                set_number: data.set_number,
-                subcategory: data.subcategory,
-                metadata: data.metadata,
-            };
+    createProductVariants: async (productId: string, variants: CreateVariantRequest[]): Promise<any> => {
+        return apiClient.post(`/private/product/${productId}/variants`, variants);
+    },
 
-            const createdProduct = await productsApi.createProduct(productData);
-            console.log('Product created:', createdProduct);
+    getProduct: async (productId: string): Promise<ApiResponse<Product>> => {
+        return apiClient.get(`/public/product/${productId}`);
+    },
 
-            const variantsWithImages = imageVariants.filter(
-                v => v.frontImage || v.backImage
-            );
+    getVariants: async (productId: string): Promise<ApiResponse<Variant[]>> => {
+        return apiClient.get(`/public/product/${productId}/variants`);
+    },
 
-            if (variantsWithImages.length > 0) {
-                const uploadResult = await productsApi.uploadProductImages(
-                    createdProduct.product.id,
-                    variantsWithImages
-                );
-                console.log('Images uploaded:', uploadResult);
-                return uploadResult;
-            }
+    getProducts: async (offset: number = 0, limit: number = 10): Promise<ProductsListResponse> => {
+        return apiClient.get(`/private/product?offset=${offset}&limit=${limit}`);
+    },
 
-            return createdProduct;
-        } catch (error) {
-            console.error('Error creating product:', error);
-            throw error;
-        }
-    }
-}
+    getProductCount: async (): Promise<number> => {
+        return apiClient.get('/private/product/count');
+    },
+
+    deleteProduct: async (productId: string): Promise<void> => {
+        return apiClient.delete(`/private/product/${productId}`);
+    },
+};

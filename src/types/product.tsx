@@ -1,4 +1,6 @@
-import {Variant} from "@/lib/api/endpoints/products";
+import {productsApi} from "@/lib/api/endpoints/products";
+import {Variant} from "./variant";
+import {useEffect, useState} from "react";
 
 
 export enum ProductCategory {
@@ -13,7 +15,7 @@ export interface Product {
     name: string;
     image_url: string | null;
     game: string;
-    expansion: string | null;
+    set: string | null;
     set_number: string | null;
     category: ProductCategory;
     subcategory: string | null;
@@ -22,12 +24,17 @@ export interface Product {
     updated_at: string;
 }
 
+export interface CreateProductResponse {
+    product: Product;
+    variants: Variant[];
+}
+
 export interface CreateProductRequest {
     name: string;
+    description?: string;
     image_url?: string | null;
     game: string;
     expansion?: string | null;
-    set_number?: string | null;
     category: ProductCategory;
     subcategory?: string | null;
     metadata?: Record<string, unknown>;
@@ -43,6 +50,13 @@ export interface UpdateProductRequest {
     category?: ProductCategory;
     subcategory?: string | null;
     metadata?: Record<string, unknown>;
+}
+
+export interface CreateVariantRequest {
+    name: string;
+    set_number?: string;
+    is_primary: boolean;
+    metadata?: Record<string, unknown> | null;
 }
 
 export interface ProductsResponse {
@@ -111,57 +125,106 @@ export const extractMetadataFromFormData = (formData: FormData): MetadataField[]
     return metadataFields;
 };
 
-export const extractImageVariantsFromFormData = (formData: FormData): Variant[] => {
-    const variants: Record<string, Partial<Variant>> = {};
-    const entries = Array.from(formData.entries());
+export function extractVariantOrderFromFormData(formData: FormData): Array<{frontendId: string, order: number}> {
+    const variants: Array<{frontendId: string, order: number}> = [];
 
-    entries.forEach(([key, value]) => {
-        if (key.startsWith('variant_')) {
+    // Get all variant names to determine order
+    Array.from(formData.entries())
+        .filter(([key]) => key.startsWith('variant_') && key.endsWith('_name'))
+        .forEach(([key]) => {
+            const frontendId = key.split('_')[1];
+            variants.push({
+                frontendId,
+                order: variants.length
+            });
+        });
+
+    // Sort by the order they appear in the form
+    return variants.sort((a, b) => a.order - b.order);
+}
+
+// Updated helper function to extract variants from form data
+export function extractVariantsFromFormData(formData: FormData): CreateVariantRequest[] {
+    const variants: CreateVariantRequest[] = [];
+    const variantMap = new Map<string, any>();
+
+    // Group variant data by frontend variant ID
+    Array.from(formData.entries())
+        .filter(([key]) => key.startsWith('variant_'))
+        .forEach(([key, value]) => {
             const parts = key.split('_');
             if (parts.length >= 3) {
                 const variantId = parts[1];
                 const fieldType = parts.slice(2).join('_');
 
-                if (!variants[variantId]) {
-                    variants[variantId] = {
-                        id: variantId,
-                        name: '',
-                        frontImage: undefined,
-                        backImage: undefined,
-                        isPrimary: false
-                    };
+                // Skip image fields for variant creation
+                if (fieldType === 'front' || fieldType === 'back') {
+                    return;
                 }
 
-                switch (fieldType) {
-                    case 'name':
-                        variants[variantId].name = value as string;
-                        break;
-                    case 'is_primary':
-                        variants[variantId].isPrimary = value === 'true';
-                        break;
-                    case 'front_file':
-                        variants[variantId].frontImage = value as File;
-                        break;
-                    case 'front_url':
-                        if (value && typeof value === 'string' && value.trim()) {
-                            variants[variantId].frontImage = value as string;
-                        }
-                        break;
-                    case 'back_file':
-                        variants[variantId].backImage = value as File;
-                        break;
-                    case 'back_url':
-                        if (value && typeof value === 'string' && value.trim()) {
-                            variants[variantId].backImage = value as string;
-                        }
-                        break;
+                if (!variantMap.has(variantId)) {
+                    variantMap.set(variantId, {});
                 }
+
+                variantMap.get(variantId)[fieldType] = value;
             }
-        }
+        });
+
+    // Convert to CreateVariantRequest format, maintaining order
+    const orderedVariants = Array.from(variantMap.entries())
+        .sort(([a], [b]) => parseInt(a) - parseInt(b)); // Sort by frontend ID
+
+    orderedVariants.forEach(([variantId, variantData]) => {
+        variants.push({
+            name: variantData.name || `Variant ${variantId}`,
+            set_number: variantData.set_number || undefined,
+            is_primary: variantData.primary === 'true',
+            metadata: null
+        });
     });
 
-    return Object.values(variants)
-        .filter((variant): variant is Variant =>
-            Boolean(variant.id && variant.name && (variant.frontImage || variant.backImage))
-        );
+    // Ensure at least one variant exists
+    if (variants.length === 0) {
+        variants.push({
+            name: 'Default',
+            set_number: undefined,
+            is_primary: true,
+            metadata: null
+        });
+    }
+
+    return variants;
+}
+
+export const useProduct = (productId: string) => {
+    const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchProduct = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const response = await productsApi.getProduct(productId);
+
+                if (response.success) {
+                    setProduct(response.data as Product);
+                } else {
+                    setError(response.message);
+                    setProduct(null);
+                }
+            } catch (err) {
+                setError(err.message);
+                setProduct(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProduct();
+    }, [productId]);
+
+    return { product, loading, error };
 };

@@ -6,16 +6,38 @@ export interface RequestOptions {
     credentials?: RequestCredentials;
 }
 
+export interface ApiResponse<T> {
+    success: boolean;
+    message: string;
+    data?: T;
+}
+
 export const apiClient = {
-    async get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    async get<T>(endpoint: string, paramsOrOptions?: Record<string, any> | RequestOptions, options?: RequestOptions): Promise<ApiResponse<T>> {
+        let url = `${API_BASE_URL}${endpoint}`;
+        let finalOptions: RequestOptions = {};
+
+        if (paramsOrOptions) {
+            if ('credentials' in paramsOrOptions || 'headers' in paramsOrOptions) {
+                finalOptions = paramsOrOptions as RequestOptions;
+            } else {
+                const queryString = buildQueryString(paramsOrOptions);
+                if (queryString) {
+                    url += `?${queryString}`;
+                }
+                finalOptions = options || {};
+            }
+        }
+
+        const response = await fetch(url, {
             method: 'GET',
-            credentials: options?.credentials || 'include',
+            credentials: finalOptions.credentials || 'include',
             headers: {
                 'Content-Type': 'application/json',
-                ...options?.headers,
+                ...finalOptions.headers,
             },
         });
+
         if (!response.ok) throw new Error(`API request failed: ${response.status}`);
         return response.json();
     },
@@ -108,4 +130,16 @@ export const createFormData = (data: Record<string, unknown>): FormData => {
     });
 
     return formData;
+};
+
+const buildQueryString = (params: Record<string, any>): string => {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            searchParams.append(key, value.toString());
+        }
+    });
+
+    return searchParams.toString();
 };

@@ -65,11 +65,19 @@ export const AuthButtons = () => {
         );
     } else if (isAdmin && user) {
         return (
-            <div>
+            <div className="flex items-center space-x-3">
                 <Button>
                     <Link href="/admin/">
                         Admin Dashboard
                     </Link>
+                </Button>
+                <Button
+                    variant="destructive"
+                    onClick={() => {
+                        logout();
+                    }}
+                >
+                    Sign Out
                 </Button>
             </div>
         )

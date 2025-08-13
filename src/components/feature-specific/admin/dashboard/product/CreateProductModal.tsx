@@ -29,6 +29,8 @@ import {Plus, Upload, X} from "lucide-react"
 import {Checkbox} from "@/components/ui/checkbox"
 import {ProductCategory} from "@/types/product"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
+import {Textarea} from "@/components/ui/textarea"
+import {apiClient} from "@/lib/api/client";
 
 interface MetadataField {
     id: string
@@ -39,27 +41,11 @@ interface MetadataField {
 interface ImageVariant {
     id: string
     name: string
+    set_number?: string
     front?: File | string
     back?: File | string
     frontPreview?: string
     backPreview?: string
-}
-
-interface ImageData {
-    front?: string
-    back?: string
-}
-
-interface ImageMetadata {
-    [variantId: string]: ImageData
-}
-
-interface ProductMetadata {
-    images?: ImageMetadata
-    variants?: string[]
-    primary_variant?: string
-    variant_names?: Record<string, string>
-    [key: string]: unknown
 }
 
 const PRODUCT_CATEGORIES = [
@@ -133,16 +119,78 @@ function ProductForm({
 }) {
     const [selectedCategory, setSelectedCategory] = React.useState<ProductCategory>(ProductCategory.OTHER)
     const [productName, setProductName] = React.useState("")
+    const [description, setDescription] = React.useState("")
     const [game, setGame] = React.useState("")
-    const [expansion, setExpansion] = React.useState("")
-    const [setNumber, setSetNumber] = React.useState("")
+    const [set, setSet] = React.useState("")
     const [subcategory, setSubcategory] = React.useState("")
     const [metadataFields, setMetadataFields] = React.useState<MetadataField[]>([])
+
+    // API data states - handling arrays of strings
+    const [games, setGames] = React.useState<string[]>([])
+    const [sets, setSets] = React.useState<string[]>([])
+    const [loadingGames, setLoadingGames] = React.useState(false)
+    const [loadingSets, setLoadingSets] = React.useState(false)
 
     const [imageVariants, setImageVariants] = React.useState<ImageVariant[]>([
         { id: 'default', name: 'Default' }
     ])
     const [primaryVariant, setPrimaryVariant] = React.useState('default')
+
+    // Fetch games on component mount
+    React.useEffect(() => {
+        const fetchGames = async () => {
+            setLoadingGames(true)
+            try {
+                console.log('Fetching games from /public/games...')
+                // apiClient.get returns the parsed JSON directly
+                const gamesData = await apiClient.get<string[]>('/public/games')
+                console.log('Games data received:', gamesData)
+
+                setGames(Array.isArray(gamesData) ? gamesData : [])
+            } catch (error) {
+                console.error('Error fetching games:', error)
+                setGames([])
+            } finally {
+                setLoadingGames(false)
+            }
+        }
+
+        fetchGames()
+    }, [])
+
+    // Fetch sets when game changes
+    React.useEffect(() => {
+        const fetchSets = async () => {
+            if (!game) {
+                setSets([])
+                setSet("")
+                return
+            }
+
+            setLoadingSets(true)
+            try {
+                console.log('Fetching sets for game:', game)
+                // apiClient.get returns the parsed JSON directly
+                const setsData = await apiClient.get<string[]>(`/public/games/${encodeURIComponent(game)}/sets`)
+                console.log('Sets data received:', setsData)
+
+                setSets(Array.isArray(setsData) ? setsData : [])
+            } catch (error) {
+                console.error('Error fetching sets:', error)
+                setSets([])
+            } finally {
+                setLoadingSets(false)
+            }
+        }
+
+        fetchSets()
+    }, [game])
+
+    // Reset set when game changes
+    const handleGameChange = (newGame: string) => {
+        setGame(newGame)
+        setSet("") // Clear the set when game changes
+    }
 
     const addVariant = () => {
         const variantName = selectedCategory === ProductCategory.CARD
@@ -170,6 +218,12 @@ function ProductForm({
         ))
     }
 
+    const updateVariantSetNumber = (id: string, set_number: string) => {
+        setImageVariants(imageVariants.map(v =>
+            v.id === id ? { ...v, set_number } : v
+        ))
+    }
+
     const updateVariantImage = (
         variantId: string,
         face: 'front' | 'back',
@@ -184,9 +238,6 @@ function ProductForm({
             if (file) {
                 updated[face] = file
                 updated[`${face}Preview`] = URL.createObjectURL(file)
-                // Clear URL if file is provided
-                if (face === 'front') updated.front = file
-                if (face === 'back') updated.back = file
             } else if (url) {
                 updated[face] = url
                 updated[`${face}Preview`] = undefined
@@ -240,17 +291,18 @@ function ProductForm({
             return
         }
 
-        const formElement = e.target as HTMLFormElement
         const formData = new FormData()
 
+        // Basic product info
         formData.append('name', productName.trim())
         formData.append('game', game.trim())
         formData.append('category', selectedCategory)
 
-        if (expansion.trim()) formData.append('expansion', expansion.trim())
-        if (setNumber.trim()) formData.append('set_number', setNumber.trim())
+        if (description.trim()) formData.append('description', description.trim())
+        if (set.trim()) formData.append('expansion', set.trim()) // Keep 'expansion' for backward compatibility
         if (subcategory.trim()) formData.append('subcategory', subcategory.trim())
 
+        // Custom metadata
         metadataFields.forEach((field, index) => {
             if (field.key.trim() && field.value.trim()) {
                 formData.append(`metadata_${index}_key`, field.key.trim())
@@ -258,39 +310,34 @@ function ProductForm({
             }
         })
 
-        const categoryFormData = new FormData(formElement)
-        for (const [key, value] of categoryFormData.entries()) {
-            if (!['category', 'name', 'game', 'expansion', 'set_number', 'subcategory'].includes(key) &&
-                !key.startsWith('metadata_') &&
-                !key.startsWith('image_') &&
-                !key.startsWith('variant_') &&
-                value) {
-                formData.append(key, value)
-            }
-        }
-
+        // Variant data (including images)
         imageVariants.forEach((variant) => {
-            if (variant.front || variant.back || variant.name.trim()) {
-                formData.append(`variant_${variant.id}_name`, variant.name.trim() || `Variant ${variant.id}`)
-                formData.append(`variant_${variant.id}_is_primary`, (variant.id === primaryVariant).toString())
+            formData.append(`variant_${variant.id}_name`, variant.name.trim() || `Variant ${variant.id}`)
+            formData.append(`variant_${variant.id}_primary`, (variant.id === primaryVariant).toString())
 
-                if (variant.front) {
-                    if (variant.front instanceof File) {
-                        formData.append(`variant_${variant.id}_front_file`, variant.front)
-                    } else if (typeof variant.front === 'string' && variant.front.trim()) {
-                        formData.append(`variant_${variant.id}_front_url`, variant.front.trim())
-                    }
+            if (variant.set_number?.trim()) {
+                formData.append(`variant_${variant.id}_set_number`, variant.set_number.trim())
+            }
+
+            // Front image - FIXED: Removed _file suffix
+            if (variant.front) {
+                if (variant.front instanceof File) {
+                    formData.append(`variant_${variant.id}_front`, variant.front)
+                } else if (typeof variant.front === 'string' && variant.front.trim()) {
+                    formData.append(`variant_${variant.id}_front_url`, variant.front.trim())
                 }
+            }
 
-                if (variant.back) {
-                    if (variant.back instanceof File) {
-                        formData.append(`variant_${variant.id}_back_file`, variant.back)
-                    } else if (typeof variant.back === 'string' && variant.back.trim()) {
-                        formData.append(`variant_${variant.id}_back_url`, variant.back.trim())
-                    }
+            // Back image - FIXED: Removed _file suffix
+            if (variant.back) {
+                if (variant.back instanceof File) {
+                    formData.append(`variant_${variant.id}_back`, variant.back)
+                } else if (typeof variant.back === 'string' && variant.back.trim()) {
+                    formData.append(`variant_${variant.id}_back_url`, variant.back.trim())
                 }
             }
         })
+
         onProductCreated?.(formData)
         onClose?.()
     }
@@ -322,15 +369,14 @@ function ProductForm({
             </div>
 
             <div className="grid gap-3">
-                <Label htmlFor="game">Game *</Label>
-                <Input
-                    id="game"
-                    name="game"
-                    type="text"
-                    placeholder="e.g., Pokemon, Magic: The Gathering, Yu-Gi-Oh!"
-                    value={game}
-                    onChange={(e) => setGame(e.target.value)}
-                    required
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                    id="description"
+                    name="description"
+                    placeholder="Enter product description..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    maxLength={2000}
                 />
             </div>
 
@@ -354,32 +400,6 @@ function ProductForm({
             </div>
 
             <div className="grid gap-3">
-                <Label htmlFor="expansion">Expansion/Set</Label>
-                <Input
-                    id="expansion"
-                    name="expansion"
-                    type="text"
-                    placeholder="e.g., Base Set, Shadowlands, etc."
-                    value={expansion}
-                    onChange={(e) => setExpansion(e.target.value)}
-                />
-            </div>
-
-            {selectedCategory === ProductCategory.CARD && (
-                <div className="grid gap-3">
-                    <Label htmlFor="set_number">Set Number</Label>
-                    <Input
-                        id="set_number"
-                        name="set_number"
-                        type="text"
-                        placeholder="e.g., 001/200, PSY-1, etc."
-                        value={setNumber}
-                        onChange={(e) => setSetNumber(e.target.value)}
-                    />
-                </div>
-            )}
-
-            <div className="grid gap-3">
                 <Label htmlFor="subcategory">Subcategory</Label>
                 <Input
                     id="subcategory"
@@ -391,13 +411,74 @@ function ProductForm({
                 />
             </div>
 
-            {/* Images Section */}
+            {/* Game Selection */}
+            <div className="grid gap-3">
+                <Label htmlFor="game">Game *</Label>
+                {loadingGames ? (
+                    <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm items-center">
+                        Loading games...
+                    </div>
+                ) : (
+                    <select
+                        id="game"
+                        name="game"
+                        value={game}
+                        onChange={(e) => handleGameChange(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        required
+                    >
+                        <option value="">Select a game</option>
+                        {games.map((gameName, index) => (
+                            <option key={`game-${index}`} value={gameName}>
+                                {gameName}
+                            </option>
+                        ))}
+                    </select>
+                )}
+                {/* Debug info */}
+                <div className="text-xs text-muted-foreground">
+                    {loadingGames && "Loading..."}
+                    {!loadingGames && games.length === 0 && "No games found"}
+                    {!loadingGames && games.length > 0 && `Found ${games.length} games: ${games.join(', ')}`}
+                </div>
+            </div>
+
+            {/* Set Selection */}
+            <div className="grid gap-3">
+                <Label htmlFor="set">Set/Expansion</Label>
+                {loadingSets ? (
+                    <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm items-center">
+                        Loading sets...
+                    </div>
+                ) : (
+                    <select
+                        id="set"
+                        name="set"
+                        value={set}
+                        onChange={(e) => setSet(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        disabled={!game || sets.length === 0}
+                    >
+                        <option value="">Select a set (optional)</option>
+                        {sets.map((setName, index) => (
+                            <option key={`set-${index}`} value={setName}>
+                                {setName}
+                            </option>
+                        ))}
+                    </select>
+                )}
+                {game && sets.length === 0 && !loadingSets && (
+                    <p className="text-sm text-muted-foreground">No sets available for this game</p>
+                )}
+            </div>
+
+            {/* Variants Section */}
             <div className="grid gap-4">
                 <div className="flex items-center justify-between">
                     <Label>
-                        {selectedCategory === ProductCategory.CARD ? 'Card Images & Prints' :
-                            selectedCategory === ProductCategory.ACCESSORY ? 'Product Images & Variants' :
-                                'Product Images'}
+                        {selectedCategory === ProductCategory.CARD ? 'Card Variants & Prints' :
+                            selectedCategory === ProductCategory.ACCESSORY ? 'Product Variants' :
+                                'Product Variants'}
                     </Label>
                     <Button
                         type="button"
@@ -445,6 +526,7 @@ function ProductForm({
                                 canDelete={variant.id !== 'default'}
                                 selectedCategory={selectedCategory}
                                 onUpdateName={(name) => updateVariantName(variant.id, name)}
+                                onUpdateSetNumber={(setNumber) => updateVariantSetNumber(variant.id, setNumber)}
                                 onUpdateImage={(face, file, url) => updateVariantImage(variant.id, face, file, url)}
                                 onRemoveImage={(face) => removeVariantImage(variant.id, face)}
                                 onDelete={() => removeVariant(variant.id)}
@@ -522,6 +604,7 @@ interface VariantImageSectionProps {
     canDelete: boolean
     selectedCategory: ProductCategory
     onUpdateName: (name: string) => void
+    onUpdateSetNumber: (setNumber: string) => void
     onUpdateImage: (face: 'front' | 'back', file?: File, url?: string) => void
     onRemoveImage: (face: 'front' | 'back') => void
     onDelete: () => void
@@ -532,6 +615,7 @@ function VariantImageSection({
                                  canDelete,
                                  selectedCategory,
                                  onUpdateName,
+                                 onUpdateSetNumber,
                                  onUpdateImage,
                                  onRemoveImage,
                                  onDelete
@@ -540,6 +624,7 @@ function VariantImageSection({
     const backFileRef = React.useRef<HTMLInputElement>(null)
 
     const showBackImage = selectedCategory === ProductCategory.CARD
+    const showSetNumber = selectedCategory === ProductCategory.CARD
 
     return (
         <div className="space-y-4 p-4 border rounded-lg">
@@ -563,8 +648,21 @@ function VariantImageSection({
                 )}
             </div>
 
+            {/* Set Number for Cards */}
+            {showSetNumber && (
+                <div className="space-y-2">
+                    <Label>Set Number</Label>
+                    <Input
+                        placeholder="e.g., 001/200, PSY-1, etc."
+                        value={variant.set_number || ''}
+                        onChange={(e) => onUpdateSetNumber(e.target.value)}
+                    />
+                </div>
+            )}
+
             {/* Front Image */}
             <div className="space-y-2">
+                <Label>Front Image</Label>
                 {(variant.frontPreview || (typeof variant.front === 'string' && variant.front)) && (
                     <div className="relative w-32 h-32">
                         <img
@@ -604,12 +702,6 @@ function VariantImageSection({
                         <Upload className="h-4 w-4" />
                     </Button>
                 </div>
-
-                <Input
-                    placeholder="Or image URL"
-                    value={typeof variant.front === 'string' ? variant.front : ''}
-                    onChange={(e) => onUpdateImage('front', undefined, e.target.value)}
-                />
             </div>
 
             {/* Back Image (only for cards) */}
@@ -655,19 +747,13 @@ function VariantImageSection({
                             <Upload className="h-4 w-4" />
                         </Button>
                     </div>
-
-                    <Input
-                        placeholder="Or image URL"
-                        value={typeof variant.back === 'string' ? variant.back : ''}
-                        onChange={(e) => onUpdateImage('back', undefined, e.target.value)}
-                    />
                 </div>
             )}
         </div>
     )
 }
 
-// Keep your existing CategoryForm component and its sub-components unchanged
+// Keep your existing CategoryForm components unchanged
 interface CategoryFormProps {
     category: ProductCategory
 }
@@ -686,26 +772,11 @@ function CategoryForm({ category }: CategoryFormProps) {
 }
 
 function CardForm() {
-    return (
-        <>
-
-        </>
-    )
+    return <></>
 }
 
 function AccessoryForm() {
-    return (
-        <>
-            <div className="grid gap-3">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                    id="description"
-                    name="description"
-                    placeholder="e.g., In box, from 2025"
-                />
-            </div>
-        </>
-    )
+    return <></>
 }
 
 function SealedForm() {
@@ -727,29 +798,10 @@ function SealedForm() {
                 </div>
                 <input type="hidden" name="sealed" value={isSealed.toString()} />
             </div>
-            <div className="grid gap-3">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                    id="description"
-                    name="description"
-                    placeholder="e.g., Display box, booster pack..."
-                />
-            </div>
         </>
     )
 }
 
 function GenericForm() {
-    return (
-        <>
-            <div className="grid gap-3">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                    id="description"
-                    name="description"
-                    placeholder="Describe the item..."
-                />
-            </div>
-        </>
-    )
+    return <></>
 }
