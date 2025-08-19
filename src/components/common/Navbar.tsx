@@ -15,8 +15,20 @@ export const Navbar = () => {
                     <div className="z-10 h-full w-full flex justify-between items-center bg-primary-foreground rounded-lg px-8 shadow-lg outline-1 outline-border">
                         <div className="">
                             {/* Logo and brand name */}
+                            {/*
                             <Link href="/">
                                 <Image src="/images/logo.png" alt="Sovereign Logo" width={50} height={50}/>
+                            </Link>
+                            */}
+                            <Link href="/">
+                                <div className="flex items-center justify-between">
+                                    <h1 className="text-2xl font-bold text-primary">
+                                        TCG
+                                    </h1>
+                                    <h1 className="text-2xl">
+                                        Emporium
+                                    </h1>
+                                </div>
                             </Link>
                         </div>
                         <div className="flex-grow flex justify-center">

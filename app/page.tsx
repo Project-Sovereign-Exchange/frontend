@@ -1,5 +1,6 @@
 import Image from "next/image";
 import {PinContainer} from "@/components/feature-specific/front-page/pin";
+import Link from "next/link";
 
 export default function Home() {
     return (
@@ -35,32 +36,32 @@ export default function Home() {
                 <PinContainer
                     className="w-[250px] h-[350px]"
                     image="/images/front-page/swu-logo-2.webp"
-                    href={`${process.env.NEXT_PUBLIC_URL}/search`}
+                    href={`/marketplace/products?q=admiral&game=Star+Wars+Unlimited`}
                     imageHeight={400}
                     imageWidth={400}
                 >
-                    <Image
-                        src="/images/front-page/swu.webp"
-                        alt="Next.js 14"
-                        width={400}
-                        height={400}
-                        className="rounded-2xl object-cover w-full h-full"
-                    />
+                        <Image
+                            src="/images/front-page/swu.webp"
+                            alt="Next.js 14"
+                            width={400}
+                            height={400}
+                            className="rounded-2xl object-cover w-full h-full"
+                        />
                 </PinContainer>
                 <PinContainer
                     className="w-[250px] h-[350px]"
                     image="/images/front-page/pokemon-logo.webp"
-                    href={`${process.env.NEXT_PUBLIC_URL}/search`}
+                    href={`/marketplace/products?q=pokemon&game=pokemon`}
                     imageHeight={200}
                     imageWidth={200}
                 >
-                    <Image
-                        src="/images/front-page/pokemon.webp"
-                        alt="Next.js 14"
-                        width={400}
-                        height={400}
-                        className="rounded-2xl object-cover w-full h-full"
-                    />
+                        <Image
+                            src="/images/front-page/pokemon.webp"
+                            alt="Next.js 14"
+                            width={400}
+                            height={400}
+                            className="rounded-2xl object-cover w-full h-full"
+                        />
                 </PinContainer>
             </div>
             </div>

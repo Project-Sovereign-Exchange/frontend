@@ -81,9 +81,9 @@ export function RegisterForm({
         try {
             const result = await authApi.register({
                 username: formData.username,
-                email: formData.email,
                 password: formData.password,
-                confirmPassword: formData.confirmPassword
+                confirmPassword: formData.confirmPassword,
+                email: formData.email,
             });
 
             setSuccess('Account created successfully! Redirecting to login...');

@@ -106,7 +106,6 @@ export const ProductManager = () => {
 
     const handleProductCreated = useCallback(async (formData: FormData) => {
         try {
-            // Extract basic product data
             const productData: CreateProductRequest = {
                 name: formData.get('name') as string,
                 description: formData.get('description') as string || undefined,
@@ -119,11 +118,9 @@ export const ProductManager = () => {
                 metadata: buildCustomMetadata(extractMetadataFromFormData(formData))
             };
 
-            // Step 1: Create the product with variants
             const response = await productsApi.createProduct(productData);
             console.log('Product created:', response);
 
-            // Extract the actual variant IDs from the response
             if (!response.data?.variants || response.data.variants.length === 0) {
                 console.log('No variants returned from product creation');
                 return;
@@ -132,15 +129,12 @@ export const ProductManager = () => {
             const createdProduct = response.data.product;
             const createdVariants = response.data.variants;
 
-            // Step 2: Upload images using the real variant IDs
             const imageFormData = new FormData();
             let hasImages = false;
 
-            // Create mapping from frontend variant order to backend variant IDs
             const frontendVariants = extractVariantOrderFromFormData(formData);
             const variantIdMapping = new Map<string, number>();
 
-            // Map frontend variants to backend variants by order
             createdVariants.forEach((backendVariant: any, index: number) => {
                 if (frontendVariants[index]) {
                     variantIdMapping.set(frontendVariants[index].frontendId, backendVariant.id);

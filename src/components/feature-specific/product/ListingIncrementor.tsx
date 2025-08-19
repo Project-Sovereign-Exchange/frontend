@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 
 
-export const ListingIncrementor = () => {
+export const ListingIncrementor = ({max} : {max: number}) => {
     return (
         <div className="flex flex-row items-stretch">
             <Select>
@@ -22,11 +22,11 @@ export const ListingIncrementor = () => {
                 <SelectContent>
                     <SelectGroup>
                         <SelectLabel>Amount</SelectLabel>
-                        <SelectItem value="apple">1</SelectItem>
-                        <SelectItem value="banana">2</SelectItem>
-                        <SelectItem value="blueberry">3</SelectItem>
-                        <SelectItem value="grapes">4</SelectItem>
-                        <SelectItem value="pineapple">5</SelectItem>
+                        {[...Array(max).keys()].map((i) => (
+                            <SelectItem key={i + 1} value={`${i + 1}`}>
+                                {i + 1}
+                            </SelectItem>
+                        ))}
                     </SelectGroup>
                 </SelectContent>
             </Select>

@@ -1,28 +1,36 @@
 "use client";
 import Image from "next/image";
 import {useRouter} from "next/navigation";
+import {SearchableProduct} from "@/lib/api/endpoints/search";
+import {buildProductImageUrlWithSize} from "@/util/images";
 
 
-export const SearchResult = () => {
+export const SearchResult = ({product} : {key: string, product: SearchableProduct}) => {
     const router = useRouter()
 
     return (
         <div className="flex flex-row items-center justify-start h-full w-full hover:bg-accent cursor-pointer rounded-lg" onClick={() => router.push('/marketplace/product')}>
             <div>
                 <Image
-                    src="/images/logo.png"
+                    src={buildProductImageUrlWithSize(
+                        product.game || 'accessories',
+                        product.id,
+                        'Default',
+                        'front',
+                        'medium'
+                    )}
                     alt="Search Result Placeholder"
-                    width={150}
-                    height={150}
-                    className="rounded-2xl object-cover mx-auto"
+                    width={100}
+                    height={100}
+                    className="rounded-xl object-cover mx-auto"
                 />
             </div>
             <div className="flex flex-col justify-start h-full mx-4">
                 <h1 className="scroll-m-20 text-2xl font-semibold tracking-tight first:mt-0">
-                    Name
+                    {product.name || "Product Name"}
                 </h1>
                 <p className="text-sm text-muted-foreground mb-2">
-                    Game - Expansion - Set
+                    {product.game || "Game Name"} - {product.set || "Expansion Name"}
                 </p>
 
                 <h1 className="scroll-m-20 text-lg font-semibold tracking-tight first:mt-0">

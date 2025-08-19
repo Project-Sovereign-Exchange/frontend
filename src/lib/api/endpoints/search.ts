@@ -48,5 +48,9 @@ export const searchApi = {
 
     listings: async (query: SearchQuery): Promise<ApiResponse<SearchResponse<SearchableListing>>> => {
         return apiClient.get(`/public/search/listings`, query);
-    }
+    },
+
+    trending: async (): Promise<ApiResponse<SearchResponse<SearchableProduct>>> => {
+        return apiClient.get(`/public/search/products/trending`);
+    },
 }

@@ -5,11 +5,11 @@ import {Checkbox} from "@/components/ui/checkbox";
 import {Label} from "@/components/ui/label";
 import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
 import {Rating} from "@/components/common/Rating";
-import {ChevronRight, Plus} from "lucide-react";
+import {ListingsFilters} from "@/hooks/useListings";
 
 
 
-export function ListingsFilter() {
+export function ListingsFilter({ filters, onFiltersChange, onClearFilters } : {filters: ListingsFilters, onFiltersChange: (filters: ListingFilters) => void, onClearFilters: () => void}) {
     return (
         <div className="flex flex-col items-center w-full h-full my-8 space-y-4">
             <div>

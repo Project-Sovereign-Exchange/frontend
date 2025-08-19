@@ -10,23 +10,26 @@ import {PriceChart} from "@/components/feature-specific/product/PriceChart";
 import {Product} from "@/types/product";
 import {Variant} from "@/types/variant";
 import {buildProductImageUrlWithSize} from "@/util/images";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {ListingsSection} from "@/components/feature-specific/product/ListingSection";
 
 export function ProductClientPage({ product, variants }: { product: Product, variants: Variant[] }) {
 
     const [flipped, setFlipped] = useState(false);
+    const [selectedVariant, setSelectedVariant] = useState<string>(variants[0]?.name || 'Default');
 
     const imgProps = !flipped
         ? { width: 250, height: 350, src: buildProductImageUrlWithSize(
             product.game,
             product.id,
-            variants[0]?.name || 'Default',
+            selectedVariant,
             'front',
                 'original'
             ) }
         : { width: 350, height: 250, src: buildProductImageUrlWithSize(
             product.game,
             product.id,
-            variants[0]?.name || 'Default',
+            selectedVariant,
             'back',
                 'original'
             ) };
@@ -74,14 +77,25 @@ export function ProductClientPage({ product, variants }: { product: Product, var
                     </div>
 
                     <div>
+                        <Select value={selectedVariant} onValueChange={setSelectedVariant}>
+                            <SelectTrigger className="w-full mb-4">
+                                <SelectValue placeholder="Select Variant" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {variants.map((variant) => (
+                                    <SelectItem key={variant.id} value={variant.name}>
+                                        {variant.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
                         <h1 className="scroll-m-20 text-xl font-semibold tracking-tight first:mt-0">
                             {product.name || "Product Name"}
                         </h1>
                         <p className="text-sm text-muted-foreground mb-2">
                             {product.game || "Game Name"} - {product.set || "Expansion Name"}
                         </p>
-
-                        {/*This should be a list of metadata grabbed from the db*/}
 
                         <h1 className="scroll-m-20 text-lg font-semibold tracking-tight first:mt-0">
                             From: $0.00
@@ -128,13 +142,10 @@ export function ProductClientPage({ product, variants }: { product: Product, var
                 </div>
             </div>
 
-            <div className="flex flex-row flex-1">
-                <div className="flex flex-col min-w-3/12">
-                    <ListingsFilter/>
-                </div>
-                <Separator orientation="vertical" className="min-h-full w-full bg-primary" />
-                <ListingsTable/>
-            </div>
+            <ListingsSection
+                productId={product.id}
+                selectedVariant={selectedVariant}
+            />
         </div>
     );
 }

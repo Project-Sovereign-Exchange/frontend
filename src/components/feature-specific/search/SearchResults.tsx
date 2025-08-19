@@ -5,15 +5,11 @@ import {BadgeWithDismiss} from "@/components/feature-specific/search/BadgeWithDi
 import {SearchResult} from "@/components/feature-specific/search/SearchResult";
 import {Separator} from "@/components/ui/separator";
 import {Filters} from "@/components/feature-specific/search/Filters";
+import {Product} from "@/types/product";
+import {Variant} from "@/types/variant";
+import {SearchableProduct, SearchResponse} from "@/lib/api/endpoints/search";
 
-const filters = [
-    { name: 'All', value: 'all' },
-    { name: 'Images', value: 'images' },
-    { name: 'Videos', value: 'videos' },
-    { name: 'News', value: 'news' },
-];
-
-export const SearchResults = () => {
+export const SearchResults = ({ results, loading, error }: { results: SearchResponse<SearchableProduct>, loading: boolean, error?: string }) => {
     return (
         <div className="w-full flex flex-col items-center h-full px-8">
             <div className="flex flex-row w-full justify-start items-center space-x-4">
@@ -43,9 +39,19 @@ export const SearchResults = () => {
             </div>
 
             <div className="w-full flex flex-col items-center justify-center p-6 md:p-10 my-4 space-y-4 bg-card rounded-lg shadow-lg outline-1 outline-border">
-                <SearchResult/>
-                <Separator/>
-                <SearchResult/>
+                {loading && <p className="text-muted-foreground">Loading...</p>}
+                {error && <p className="text-destructive">{error}</p>}
+
+                {!results && !loading && !error && (
+                    <p className="text-muted-foreground">No results found.</p>
+                )}
+
+                {results?.hits?.map((product: SearchableProduct) => (
+                    <SearchResult
+                        key={product.id}
+                        product={product}
+                    />
+                ))}
             </div>
         </div>
     );

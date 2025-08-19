@@ -95,7 +95,6 @@ export const Searchbar = React.memo(() => {
                         newLoadedImages.add(imageUrl);
                         setLoadedImages(new Set(newLoadedImages));
                     } catch (error) {
-                        // Fallback to default image
                         console.warn('Failed to preload image:', imageUrl);
                     }
                 }
@@ -132,7 +131,6 @@ export const Searchbar = React.memo(() => {
         ...(category && category !== 'all' && { game: category })
     }), [debouncedQuery, category]);
 
-    // Only search when debounced query changes
     useEffect(() => {
         if (debouncedQuery.length >= 2) {
             searchProducts(searchQuery);
@@ -174,7 +172,7 @@ export const Searchbar = React.memo(() => {
                 q: query,
                 ...(category && category !== 'all' && { game: category })
             });
-            router.push(`/marketplace/search?${searchParams.toString()}`);
+            router.push(`/marketplace/products?${searchParams.toString()}`);
             setShowResults(false);
             setQuery('');
             setDebouncedQuery('');
@@ -284,13 +282,13 @@ export const Searchbar = React.memo(() => {
                             width={50}
                             height={50}
                             className="rounded-md inline-block mr-3"
-                            priority={globalIndex < 3} // Prioritize first 3 images
+                            priority={globalIndex < 3}
                             placeholder="blur"
                             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R7nxa09rI7A4gNCqhbiaGd5HjU+FZv7JJkjy9iLr20mYUZn5jl/1l1g1BYKCnLLdJP7qKtJr2ddUQhXd0YaF6VHuO1l0qGxhXBQC4aQ7hddAjYCHB/k1bNGgJJHqJJJHqJJJA"
                             unoptimized={false}
                             style={{
                                 objectFit: 'cover',
-                                backgroundColor: '#f3f4f6' // Fallback background
+                                backgroundColor: '#f3f4f6'
                             }}
                         />
                     </div>

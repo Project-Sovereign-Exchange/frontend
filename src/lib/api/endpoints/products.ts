@@ -70,26 +70,26 @@ export const productsApi = {
     },
 
     createProductVariants: async (productId: string, variants: CreateVariantRequest[]): Promise<any> => {
-        return apiClient.post(`/private/product/${productId}/variants`, variants);
+        return apiClient.post(`/private/products/${productId}/variants`, variants);
     },
 
     getProduct: async (productId: string): Promise<ApiResponse<Product>> => {
-        return apiClient.get(`/public/product/${productId}`);
+        return apiClient.get(`/public/products/${productId}`);
     },
 
     getVariants: async (productId: string): Promise<ApiResponse<Variant[]>> => {
-        return apiClient.get(`/public/product/${productId}/variants`);
+        return apiClient.get(`/public/products/${productId}/variants`);
     },
 
-    getProducts: async (offset: number = 0, limit: number = 10): Promise<ProductsListResponse> => {
-        return apiClient.get(`/private/product?offset=${offset}&limit=${limit}`);
+    getProducts: async (productIds: string[]): Promise<ProductsListResponse> => {
+        return apiClient.get(`/public/products`, { ids: productIds });
     },
 
     getProductCount: async (): Promise<number> => {
-        return apiClient.get('/private/product/count');
+        return apiClient.get('/private/products/count');
     },
 
     deleteProduct: async (productId: string): Promise<void> => {
-        return apiClient.delete(`/private/product/${productId}`);
+        return apiClient.delete(`/private/products/${productId}`);
     },
 };

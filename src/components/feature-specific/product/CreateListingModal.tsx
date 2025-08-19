@@ -25,10 +25,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { Search, Check } from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Search, Check, Loader2, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+//import { Checkbox } from "@/components/ui/checkbox"
 import { useProductSearch } from '@/hooks/useProductSearch'
 import { SearchableProduct, SearchQuery } from '@/lib/api/endpoints/search'
+import {CreateListingRequest, listingsApi} from "@/lib/api/endpoints/listings";
 
 export function CreateListingModal() {
     const [open, setOpen] = React.useState(false)
@@ -47,7 +49,7 @@ export function CreateListingModal() {
                             Search for a product and fill out the listing details.
                         </DialogDescription>
                     </DialogHeader>
-                    <ListingForm />
+                    <ListingForm onSuccess={() => setOpen(false)} />
                 </DialogContent>
             </Dialog>
         )
@@ -65,7 +67,7 @@ export function CreateListingModal() {
                         Search for a product and fill out the listing details.
                     </DrawerDescription>
                 </DrawerHeader>
-                <ListingForm className="px-4" />
+                <ListingForm className="px-4" onSuccess={() => setOpen(false)} />
                 <DrawerFooter className="pt-2">
                     <DrawerClose asChild>
                         <Button variant="outline">Cancel</Button>
@@ -76,17 +78,22 @@ export function CreateListingModal() {
     )
 }
 
-function ListingForm({ className }: React.ComponentProps<"form">) {
+interface ListingFormProps extends React.ComponentProps<"form"> {
+    onSuccess?: () => void
+}
+
+function ListingForm({ className, onSuccess }: ListingFormProps) {
     const [searchQuery, setSearchQuery] = React.useState("")
     const [debouncedQuery, setDebouncedQuery] = React.useState("")
     const [selectedProduct, setSelectedProduct] = React.useState<SearchableProduct | null>(null)
     const [showResults, setShowResults] = React.useState(false)
     const [isSearching, setIsSearching] = React.useState(false)
+    const [isSubmitting, setIsSubmitting] = React.useState(false)
+    const [submitError, setSubmitError] = React.useState<string | null>(null)
     const debounceTimeoutRef = React.useRef<NodeJS.Timeout>()
 
     const { results, loading, error, searchProducts } = useProductSearch()
 
-    // Debounced search logic
     React.useEffect(() => {
         if (debounceTimeoutRef.current) {
             clearTimeout(debounceTimeoutRef.current)
@@ -110,12 +117,11 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
         }
     }, [searchQuery])
 
-    // Search when debounced query changes
     React.useEffect(() => {
         if (debouncedQuery.length >= 2) {
             const searchQueryObj: SearchQuery = {
                 q: debouncedQuery,
-                limit: 10 // Show more results for listing creation
+                limit: 10
             }
             searchProducts(searchQueryObj)
             setShowResults(true)
@@ -123,7 +129,6 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
         }
     }, [debouncedQuery, searchProducts])
 
-    // Show results when query is long enough
     React.useEffect(() => {
         if (searchQuery.length >= 2) {
             setShowResults(true)
@@ -136,6 +141,7 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
         setSelectedProduct(product)
         setSearchQuery(product.name)
         setShowResults(false)
+        setSubmitError(null)
     }, [])
 
     const handleInputChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,7 +163,6 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
         }
     }, [searchQuery])
 
-    // Handle clicking outside to close dropdown
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as Element
@@ -170,17 +175,46 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        setSubmitError(null)
+
         if (!selectedProduct) {
-            alert("Please select a product first")
+            setSubmitError("Please select a product first")
             return
         }
 
-        console.log("Submitting listing for:", selectedProduct)
+        const formData = new FormData(e.target as HTMLFormElement)
+
+        setIsSubmitting(true)
+
+        try {
+            const listingData: CreateListingRequest = {
+                product_id: selectedProduct.id,
+                condition: formData.get('condition') as string,
+                description: formData.get('description') as string,
+                quantity: parseInt(formData.get('quantity') as string, 10),
+                price: parseFloat(formData.get('price') as string)
+            }
+
+            const response = await listingsApi.createListing(listingData)
+
+            if (response.success) {
+                setSelectedProduct(null)
+                setSearchQuery("")
+                setShowResults(false)
+                onSuccess?.()
+            } else {
+                setSubmitError(response.message || "Failed to create listing")
+            }
+        } catch (error) {
+            setSubmitError(error instanceof Error ? error.message : "An unexpected error occurred")
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
-    // Memoized search result item
     const SearchResultItem = React.memo(({ product, onClick }: {
         product: SearchableProduct
         onClick: (product: SearchableProduct) => void
@@ -233,7 +267,7 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
                             ))
                         ) : (
                             <div className="p-4 text-center text-muted-foreground">
-                                <div className="mb-2">No products found for "{searchQuery}"</div>
+                                <div className="mb-2">No products found for {searchQuery}</div>
                                 <div className="text-sm">Try searching with different keywords</div>
                             </div>
                         )}
@@ -245,7 +279,13 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
 
     return (
         <form className={cn("grid items-start gap-6", className)} onSubmit={handleSubmit}>
-            {/* Product Search */}
+            {submitError && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{submitError}</AlertDescription>
+                </Alert>
+            )}
+
             <div className="grid gap-3 relative search-container">
                 <Label htmlFor="product">Product</Label>
                 <div className="relative">
@@ -259,6 +299,7 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
                         onFocus={handleInputFocus}
                         className={`pl-10 ${showResults ? 'rounded-b-none' : ''}`}
                         autoComplete="off"
+                        disabled={isSubmitting}
                     />
                     {selectedProduct && (
                         <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
@@ -268,15 +309,22 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
                 {renderSearchResults()}
             </div>
 
-            {/* Category-specific form */}
             {selectedProduct && (
                 <CategoryForm
                     product={selectedProduct}
+                    disabled={isSubmitting}
                 />
             )}
 
-            <Button type="submit" disabled={!selectedProduct}>
-                Create Listing
+            <Button type="submit" disabled={!selectedProduct || isSubmitting}>
+                {isSubmitting ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating Listing...
+                    </>
+                ) : (
+                    'Create Listing'
+                )}
             </Button>
         </form>
     )
@@ -284,42 +332,71 @@ function ListingForm({ className }: React.ComponentProps<"form">) {
 
 interface CategoryFormProps {
     product: SearchableProduct
+    disabled?: boolean
 }
 
-function CategoryForm({ product }: CategoryFormProps) {
-    // You can determine category based on product.game or other properties
-    // For now, I'll create a generic form that works with the SearchableProduct type
-    return <GenericForm product={product} />
+function CategoryForm({ product, disabled }: CategoryFormProps) {
+    return <GenericForm product={product} disabled={disabled} />
 }
 
-function GenericForm({ product }: { product: SearchableProduct }) {
+function GenericForm({ product, disabled }: { product: SearchableProduct; disabled?: boolean }) {
     return (
         <>
             <div className="grid gap-3">
-                <Label htmlFor="condition">Condition</Label>
-                <select id="condition" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="">Select condition</option>
+                <Label htmlFor="condition">Condition *</Label>
+                <select
+                    id="condition"
+                    name="condition"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={disabled}
+                    required
+                    defaultValue=""
+                >
+                    <option value="" disabled>Select condition</option>
                     <option value="mint">Mint</option>
-                    <option value="near-mint">Near Mint</option>
-                    <option value="excellent">Excellent</option>
-                    <option value="good">Good</option>
-                    <option value="played">Played</option>
-                    <option value="poor">Poor</option>
+                    <option value="near_mint">Near Mint</option>
+                    <option value="lightly_played">Lightly Played</option>
+                    <option value="moderately_played">Moderately Played</option>
+                    <option value="heavily_played">Heavily Played</option>
+                    <option value="damaged">Damaged</option>
                 </select>
             </div>
-            {product.set && (
-                <div className="grid gap-3">
-                    <Label htmlFor="set">Set/Edition</Label>
-                    <Input id="set" defaultValue={product.set} />
-                </div>
-            )}
             <div className="grid gap-3">
                 <Label htmlFor="description">Description</Label>
-                <Input id="description" placeholder="Additional details about the item..." />
+                <Input
+                    id="description"
+                    name="description"
+                    placeholder="Additional details about the item..."
+                    disabled={disabled}
+                    defaultValue=""
+                />
             </div>
             <div className="grid gap-3">
-                <Label htmlFor="price">Price ($)</Label>
-                <Input id="price" type="number" step="0.01" placeholder="0.00" />
+                <Label htmlFor="quantity">Quantity *</Label>
+                <Input
+                    id="quantity"
+                    name="quantity"
+                    type="number"
+                    step="1"
+                    min="1"
+                    placeholder="1"
+                    disabled={disabled}
+                    required
+                    defaultValue="1"
+                />
+            </div>
+            <div className="grid gap-3">
+                <Label htmlFor="price">Price ($) *</Label>
+                <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    disabled={disabled}
+                    required
+                />
             </div>
         </>
     )
